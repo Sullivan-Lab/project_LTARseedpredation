@@ -1,4 +1,9 @@
-data<-read.csv(file.choose())	#Seed predation data saved in Lauren's Google Drive
+rm(list=ls())
+
+library(readxl)
+library(tidyverse)
+
+data<-read_csv("../data/Seed predation data.csv")	#Seed predation data saved in Lauren's Google Drive
 
 ##Convert character data to factors
 	data$site<-as.factor(data$site)
@@ -35,13 +40,13 @@ pd <- position_dodge(2)
 
 ##Analysis (distance as continuous variable)
 library(lmerTest)		#A package that gives p-values for the lmer summary and anova
-	data.rand<-lmer(seeds~dist*strip+crop+(1|site/date),data=data)
+	data.rand<-lmer(seeds~dist*strip+crop+season+(1|site/date),data=data)
 	anova(data.rand)
 	summary(data.rand)
 
 ##View least squared means to compare strip vs. no strip?
 #Need to convert distance to factor and rerun analysis
-	data.rand.fact<-lmer(seeds~dist.fact*strip+crop+(1|site/date),data=data)
+	data.rand.fact<-lmer(seeds~dist.fact*strip+crop+season+(1|site/date),data=data)
 	anova(data.rand.fact)
 	summary(data.rand.fact)
 
@@ -55,3 +60,5 @@ library(lsmeans)
 		xlab("Distance (m)") +
 		ylab("Seeds remaining (lsmean)") +
 		geom_errorbar(aes(ymin=lower.CL, ymax=upper.CL), width=0.2, position=position_dodge(0.2))
+
+	
