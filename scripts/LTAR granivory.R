@@ -5,11 +5,15 @@ library(tidyverse)
 
 data<-read_csv("../data/Seed predation data.csv")	#Seed predation data saved in Lauren's Google Drive
 
+head(data)
+
+
 ##Convert character data to factors (not character or numerical)
 data$site<-as.factor(data$site)
 data$crop<-as.factor(data$crop)
 data$strip<-as.factor(data$strip)
 data$transect<-as.factor(data$transect)
+data$season<-as.factor(data$season)
 data$dist.fact<-as.factor(data$dist)
 
 ##Convert date to appropriate format
@@ -33,6 +37,8 @@ mean.data<- ddply(data, c("strip", "dist", "date", "season"), summarise,
 strip<-subset(mean.data,strip=="Y")
 #Limit data to fall
 fall.strip<-subset(strip,season=="fall")
+head(fall.strip)
+
 
 #Make the "no strip" lines for fall
 #This assumes that all points from "N" transects are essentially the same for purposes of comparison to the "Y" transects
@@ -42,6 +48,8 @@ mean.strip<- ddply(data, c("strip", "date", "season"), summarise,
                    upperCI = mean + sd(seeds) / sqrt(length(seeds))*qt(.975, length(seeds)-1),
                    lowerCI = mean - sd(seeds) / sqrt(length(seeds))*qt(.975, length(seeds)-1)
 )
+
+head(mean.strip)
 
 #Find the mean number of seeds remaining in fields without strips
 fall.line<-subset(mean.strip,season=="fall"&strip=="N")
@@ -68,30 +76,38 @@ ggplot(data = fall.strip, aes(x=dist, y=mean)) +	#Basic graph
                 width=4, linewidth = 1, colour = "black") +	#Add 95% C.I. error bars to points
   facet_grid(rows = vars(date))+			#Break up data by date
   geom_hline(data = fall.means, 
-             aes(yintercept = c(fall.mean)), linewidth =1, 
-             colour = "gray")+					#Add mean seeds remaining in fields without strip
+             aes(yintercept = c(fall.mean), alpha = 0.5), linewidth =1, 
+             colour = "gray40")+					#Add mean seeds remaining in fields without strip
   geom_hline(data = fall.upperCI, 
-             aes(yintercept = c(fall.upperCI)), 
+             aes(yintercept = c(fall.upperCI), alpha = 0.5), 
              linetype="dashed", linewidth = 1, 
-             colour = "gray")+					#Add 95% C.I. around mean seeds in field without strip
+             colour = "gray40")+					#Add 95% C.I. around mean seeds in field without strip
   geom_hline(data = fall.lowerCI, 
-             aes(yintercept = c(fall.lowerCI)), 
+             aes(yintercept = c(fall.lowerCI), alpha = 0.5), 
              linetype="dashed", linewidth = 1, 
-             colour = "gray")+					#Finishing up with the C.I.
-  theme(axis.text.y=element_text(colour="black"),	#All the rest of this is formatting for the graph
-        axis.text.x=element_text(colour="black"),
-        axis.ticks=element_line(colour="black"),
-        panel.background=element_rect(fill="white"),
-        panel.grid.minor=element_blank(), 
-        panel.grid.major=element_blank(),
-        legend.position = "none",
-        legend.title = element_text(size=12),
-        legend.key = element_rect(fill="white"), legend.background = element_rect(fill="white"),
-        legend.text = element_text(size = 12),
-        axis.line.x=element_line(colour="black",size=0.5,linetype="solid"),
-        axis.line.y=element_line(colour="black",size=0.5,linetype="solid"),
-        text = element_text(size = rel(4.5)))
+             colour = "gray40")+					#Finishing up with the C.I.
+  theme_bw()+
+  theme(axis.text = element_text(size = 14), # Increase size of both x and y axis tick labels
+        axis.title = element_text(size = 16, face = "bold") # Optionally, increase axis title size and make bold
+  )+
+  theme(legend.position = "none")
 
+
+  # theme(axis.text.y=element_text(colour="black"),	#All the rest of this is formatting for the graph
+  #       axis.text.x=element_text(colour="black"),
+  #       axis.ticks=element_line(colour="black"),
+  #       panel.background=element_rect(fill="white"),
+  #       panel.grid.minor=element_blank(), 
+  #       panel.grid.major=element_blank(),
+  #       legend.position = "none",
+  #       legend.title = element_text(size=12),
+  #       legend.key = element_rect(fill="white"), legend.background = element_rect(fill="white"),
+  #       legend.text = element_text(size = 12),
+  #       axis.line.x=element_line(colour="black",size=0.5,linetype="solid"),
+  #       axis.line.y=element_line(colour="black",size=0.5,linetype="solid"),
+  #       text = element_text(size = rel(4.5)))
+
+## Brent remade theme_classic() and Allison likes theme_bw()
 
 #Now, spring graphs
 #Limit data to spring
@@ -120,29 +136,36 @@ ggplot(data = spring.strip, aes(x=dist, y=mean)) +
                 width=4, linewidth = 1, color="black") +
   facet_grid(rows = vars(date))+
   geom_hline(data = spring.means, 
-             aes(yintercept = c(spring.mean)), linewidth =1, 
-             color="gray")+
+             aes(yintercept = c(spring.mean), alpha = 0.5), linewidth =1, 
+             color="gray40")+
   geom_hline(data = spring.upperCI, 
-             aes(yintercept = c(spring.upperCI)), 
+             aes(yintercept = c(spring.upperCI), alpha = 0.5), 
              linetype="dashed", linewidth = 1, 
-             color="gray")+
+             color="gray40")+
   geom_hline(data = spring.lowerCI, 
-             aes(yintercept = c(spring.lowerCI)), 
+             aes(yintercept = c(spring.lowerCI), alpha = 0.5), 
              linetype="dashed", linewidth = 1, 
-             color="gray")+
-  theme(axis.text.y=element_text(colour="black"),
-        axis.text.x=element_text(colour="black"),
-        axis.ticks=element_line(colour="black"),
-        panel.background=element_rect(fill="white"),
-        panel.grid.minor=element_blank(), 
-        panel.grid.major=element_blank(),
-        legend.position = "none",
-        legend.title = element_text(size=12),
-        legend.key = element_rect(fill="white"), legend.background = element_rect(fill="white"),
-        legend.text = element_text(size = 12),
-        axis.line.x=element_line(colour="black",size=0.5,linetype="solid"),
-        axis.line.y=element_line(colour="black",size=0.5,linetype="solid"),
-        text = element_text(size = rel(4.5)))
+             color="gray40")+
+  theme_bw()+
+  theme(axis.text = element_text(size = 14), 
+        axis.title = element_text(size = 16, face = "bold"))+
+  theme(legend.position = "none")
+
+
+# 
+#   theme(axis.text.y=element_text(colour="black"),
+#         axis.text.x=element_text(colour="black"),
+#         axis.ticks=element_line(colour="black"),
+#         panel.background=element_rect(fill="white"),
+#         panel.grid.minor=element_blank(), 
+#         panel.grid.major=element_blank(),
+#         legend.position = "none",
+#         legend.title = element_text(size=12),
+#         legend.key = element_rect(fill="white"), legend.background = element_rect(fill="white"),
+#         legend.text = element_text(size = 12),
+#         axis.line.x=element_line(colour="black",size=0.5,linetype="solid"),
+#         axis.line.y=element_line(colour="black",size=0.5,linetype="solid"),
+#         text = element_text(size = rel(4.5)))
 
 #Yay!  Graphs are done.  On to the analysis.
 
