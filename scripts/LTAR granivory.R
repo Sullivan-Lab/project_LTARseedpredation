@@ -168,35 +168,41 @@ ggplot(data = spring.strip, aes(x=dist, y=mean)) +
 #         text = element_text(size = rel(4.5)))
 
 #Yay!  Graphs are done.  On to the analysis.
-
+library(glmmTMB)
 library(lmerTest)		#A package that gives p-values for the lmer summary and anova
 #Limited interactions to make this manageable by my brain, but you can add more
 #Original question was dist*strip, but we also want to know if the season affects the strip effect
-#Other interactions seem excessive?
-#NOTE: distance is being run as a continuous variable here
-data.rand<-lmer(seeds~dist*strip+season*strip+(1|site/date),data=data)
-#And the results are...
-anova(data.rand)
-summary(data.rand)
-#But I want to know how big the effect was!
-summary(data.rand)
+# #Other interactions seem excessive?
+# #NOTE: distance is being run as a continuous variable here
+# data.rand<-lmer(seeds~dist*strip+season*strip+(1|site/date),data=data)
+# #And the results are...
+# anova(data.rand)
+# summary(data.rand)
+# #But I want to know how big the effect was!
+# summary(data.rand)
 
 ####Lauren updates
 
 
-data.rand<-lmer(seeds~dist*strip+season+(1|site/date),data=data)
-#And the results are...
-anova(data.rand)
-summary(data.rand)
+# data.rand<-lmer(seeds~dist*strip+season+(1|site/date),data=data)
+# #And the results are...
+# anova(data.rand)
+# summary(data.rand)
 
+hist(data$seeds)
 
 library(glmmTMB)
+head(data)
 data$proportion <- data$seeds/50
+data$total_seeds <- 50
 
-mod1<-glmmTMB(proportion~dist*strip+season+(1|site/date),
-                   data=subset(data, proportion < 1), 
-                   family = binomial)
+list(unique(data$proportion))
 
+mod1<-glmmTMB(proportion ~ dist * strip + season + (1|site/date),
+                   data=subset(data, proportion < 1.000001), 
+                   family = binomial,
+                   weights = total_seeds)
+summary(mod1)
 
 #And the results are...
 summary(mod1)
@@ -211,12 +217,23 @@ summary(mod1)
 #summary(data.rand.fact)
 
 ## what about crop type???
-mod2<-glmmTMB(proportion~dist*strip+season+crop+(1|site/date),
-              data=subset(data, proportion < 1), 
-              family = binomial)
+mod2<-glmmTMB(proportion ~ dist * strip + season + crop + (1|site/date),
+              data=subset(data, proportion < 1.00001), 
+              family = binomial,
+              weights = total_seeds)
 
 
 #And the results are...
 summary(mod2)
 
-	
+
+## Saturating curve model
+
+glmmTMB(y ~ I(1 / (1 + exp(-x * k))) + (1|group), family = poisson, data = mydata)
+
+mod3<-glmmTMB(proportion ~ I(1 / (1 + exp(-dist * k))) + (1|site/date),
+              data=subset(data, proportion < 1.00001), 
+              family = binomial,
+              weights = total_seeds)
+
+
