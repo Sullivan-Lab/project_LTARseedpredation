@@ -223,17 +223,129 @@ mod2<-glmmTMB(proportion ~ dist * strip + season + crop + (1|site/date),
               weights = total_seeds)
 
 
+
+mod2_mm_logit <- glmmTMB(
+  proportion ~ strip + season + crop +
+    I(dist/(K + dist)) +                         # saturating dist
+    strip:I(dist/(K + dist)) +                   # interaction (dist saturation differs by strip)
+    (1|site/date),
+  data = subset(data, proportion < 1.00001),
+  family = binomial(link = "logit"),
+  weights = total_seeds,
+  start = list(beta = c(2,2,2,2,2,2))                  # adjust; K must be > 0 (see note below)
+)
+
+summary(mod2_mm_logit)
+
+
+library(nlme)
+library(stats)
+
+Vm <- 10
+K <- 2
+
+mod2_mm <- glmmTMB(
+  proportion ~ stats::SSmicmen(dist, Vm, K) + strip + season + crop + (1|site/date),
+  data = subset(data, proportion < 1.00001),
+  family = binomial,
+  weights = total_seeds
+)
+summary(mod2_mm)
+
+test <- predict(mod2_mm_logit, type = "response")
+
+dat_tes <-  subset(data, proportion < 1.00001)
+
+data.test <- data.frame(dat_tes, test)
+
+head(data.test)
+
+mean.data<- ddply(data.test, c("strip", "dist", "date", "season"), summarise,
+                  mean = mean(test),
+                  upperCI = mean + sd(test) / sqrt(length(test))*qt(.975, length(test)-1),
+                  lowerCI = mean - sd(test) / sqrt(length(test))*qt(.975, length(test)-1)
+)
+
+strips <- subset(mean.data, strip == "Y")
+
+#Plot all data with predicted
+ggplot(data = strips, aes(x=dist, y=mean)) +
+  geom_line(linewidth = 1, color="black") +
+  geom_point(size = 3, color="black")+
+  xlab("Distance (m)") +
+  ylab("Seeds remaining") +
+  geom_errorbar(aes(ymin=lowerCI, ymax=upperCI), 
+                width=4, linewidth = 1, color="black") +
+  facet_grid(rows = vars(date))
+
+
+
+#Plot spring data with predicted
+spring.mean <- subset(mean.data, season == "spring" & strip == "Y")
+
+ggplot(data = spring.mean, aes(x=dist, y=mean)) +
+  geom_line(linewidth = 1, color="black") +
+  geom_point(size = 3, color="black")+
+  xlab("Distance (m)") +
+  ylab("Seeds remaining") +
+  geom_errorbar(aes(ymin=lowerCI, ymax=upperCI), 
+                width=4, linewidth = 1, color="black") +
+  facet_grid(rows = vars(date))
+
+
+#Plot fall data with predicted
+fall.mean <- subset(mean.data, season == "fall" & strip == "Y")
+
+ggplot(data = fall.mean, aes(x=dist, y=mean)) +
+  geom_line(linewidth = 1, color="black") +
+  geom_point(size = 3, color="black")+
+  xlab("Distance (m)") +
+  ylab("Seeds remaining") +
+  geom_errorbar(aes(ymin=lowerCI, ymax=upperCI), 
+                width=4, linewidth = 1, color="black") +
+  facet_grid(rows = vars(date))
+
+
+
+
+
++
+  geom_hline(data = spring.means, 
+             aes(yintercept = c(spring.mean), alpha = 0.5), linewidth =1, 
+             color="gray40")+
+  geom_hline(data = spring.upperCI, 
+             aes(yintercept = c(spring.upperCI), alpha = 0.5), 
+             linetype="dashed", linewidth = 1, 
+             color="gray40")+
+  geom_hline(data = spring.lowerCI, 
+             aes(yintercept = c(spring.lowerCI), alpha = 0.5), 
+             linetype="dashed", linewidth = 1, 
+             color="gray40")+
+  theme_bw()+
+  theme(axis.text = element_text(size = 14), 
+        axis.title = element_text(size = 16, face = "bold"))+
+  theme(legend.position = "none")
+
+
 #And the results are...
 summary(mod2)
 
 
 ## Saturating curve model
 
-glmmTMB(y ~ I(1 / (1 + exp(-x * k))) + (1|group), family = poisson, data = mydata)
-
-mod3<-glmmTMB(proportion ~ I(1 / (1 + exp(-dist * k))) + (1|site/date),
+mod3<-glmmTMB(proportion ~ (Vmax * (dist * strip + season + crop)) / (Km + (dist * strip + season + crop))+ (1|site/date),
               data=subset(data, proportion < 1.00001), 
               family = binomial,
               weights = total_seeds)
 
+summary(mod3)
+
+
+# Assuming data: 'resp' is target, 'conc' is predictor, 'group' is random effect
+# Formula: ~ (Vmax * conc) / (Km + conc)
+
+model_sat <- glmmTMB(resp ~ (Vmax * conc) / (Km + conc) + (1|group), 
+                     data = my_data, 
+                     family = gaussian(), # Or poisson/nbinom2 for counts
+                     start = list(beta = c(Vmax = 10, Km = 2))) # Good starting values are essential
 
